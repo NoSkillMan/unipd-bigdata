@@ -12,10 +12,10 @@ def main():
     """
     # CHECKING NUMBER OF CMD LINE PARAMTERS
     assert len(
-        sys.argv) == 5, "Usage: python WordCountExample.py <K> <H> <S> <dataset_path>"
+        sys.argv) == 5, "Usage: python G101HW1.py <K> <H> <S> <dataset_path>"
 
     # SPARK SETUP
-    conf = SparkConf().setAppName('WordCountExample').setMaster("local[*]")
+    conf = SparkConf().setAppName('G101HW1').setMaster("local[*]")
     sc = SparkContext(conf=conf)
 
     # INPUT READING
