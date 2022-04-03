@@ -1,5 +1,16 @@
+import imp
 import sys
 from pyspark import SparkContext, SparkConf
+
+
+def productCustomer(row, country='all'):
+    s = row.split(',')
+    if country == 'all':
+        return (s[1], int(s[6]))
+    elif s[7] == country:
+        return (s[1], int(s[6]))
+    else:
+        return
 
 
 def main():
@@ -36,6 +47,15 @@ def main():
 
     # 4. Read Path of Dataset
     dataset_path = sys.argv[4]
+
+    ############### Task 1 ###############
+
+    rawData = sc.textFile(dataset_path, K).cache()
+    rawData.repartition(K)
+    print(rawData.count())
+
+    product_customer = rawData.map(
+        lambda row: productCustomer(row, S)).filter(lambda row: row)
 
 
 if __name__ == "__main__":
