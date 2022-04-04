@@ -1,16 +1,19 @@
-import imp
 import sys
+import os
+import random as rand
 from pyspark import SparkContext, SparkConf
 
 
 def productCustomer(row, country='all'):
+    """
+    row = [0:TransactionID, 1:ProductID, 2:Description, 3:Quantity, 4:InvoiceDate, 5:UnitPrice, 6:CustomerID, 7:Country]
+    """
     s = row.split(',')
-    if country == 'all':
-        return (s[1], int(s[6]))
-    elif s[7] == country:
-        return (s[1], int(s[6]))
-    else:
-        return
+    if int(s[3]) > 0:
+        if country == 'all':
+            return (s[1], int(s[6]))
+        elif s[7] == country:
+            return (s[1], int(s[6]))
 
 
 def main():
@@ -47,6 +50,7 @@ def main():
 
     # 4. Read Path of Dataset
     dataset_path = sys.argv[4]
+    assert os.path.isfile(dataset_path), "File not found"
 
     ############### Task 1 ###############
 
@@ -54,8 +58,10 @@ def main():
     rawData.repartition(K)
     print(rawData.count())
 
+
+    ############### Task 2 ###############
     product_customer = rawData.map(
-        lambda row: productCustomer(row, S)).filter(lambda row: row)
+        lambda row: productCustomer(row, S)).filter(lambda row: row) 
 
 
 if __name__ == "__main__":
