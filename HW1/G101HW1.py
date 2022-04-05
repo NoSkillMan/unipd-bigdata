@@ -3,6 +3,23 @@ import os
 import random as rand
 from pyspark import SparkContext, SparkConf
 
+############### Old Task 2 ###############
+# def productCustomer(row, country='all'):
+#     """
+#     row = [0:TransactionID, 1:ProductID, 2:Description, 3:Quantity, 4:InvoiceDate, 5:UnitPrice, 6:CustomerID, 7:Country]
+#     """
+#     s = row.split(',')
+#     if int(s[3]) > 0:
+#         if country == 'all':
+#             return ((s[1], int(s[6])), 0)
+#         elif s[7] == country:
+#             return ((s[1], int(s[6])), 0)
+#
+# product_customer = (rawData.map(lambda row: productCustomer(row, S)).filter(lambda row: row)
+#                     .groupByKey()
+#                     .map(lambda x: x[0]))
+# print(f'Product-Customer Pairs = {product_customer.count()}')
+
 
 def productCustomer(row, country='all'):
     """
@@ -11,9 +28,13 @@ def productCustomer(row, country='all'):
     s = row.split(',')
     if int(s[3]) > 0:
         if country == 'all':
-            return ((s[1], int(s[6])), 0)
+            return [((s[1], int(s[6])), 0)]
         elif s[7] == country:
-            return ((s[1], int(s[6])), 0)
+            return [((s[1], int(s[6])), 0)]
+        else:
+            return []
+    else:
+        return []
 
 
 def main():
@@ -59,22 +80,28 @@ def main():
     print(f'Number of rows = {rawData.count()}')
 
     ############### Task 2 ###############
-    product_customer = (rawData.map(lambda row: productCustomer(row, S)).filter(lambda row: row)
+    product_customer = (rawData.flatMap(lambda row: productCustomer(row, S))
                         .groupByKey()
                         .map(lambda x: x[0]))
-    print(f'Product-Customer Pairs = {product_customer.count()}')
-
+    print(f'Product-Customer Pairs = {product_customer.collect()}')
 
     ############### Task 3 ###############
-    product_popularity1 = (product_customer
-                        .groupByKey()
-                        .mapValues(len))
-    print(product_popularity1.collect())
+    product_popularity1 = (product_customer  # .mapPartitions(f)
+                           .groupByKey()
+                           .mapValues(len))
+
     ############## Task 4 ################
-    product_popularity2 = (product_customer
-                            
-    )
+    product_popularity2 = (product_customer.map(lambda x: (x[0], 1))
+                           .reduceByKey(lambda x, y: x+y)
+                           )
+
+    ############## Task 5 ################
+    if H > 0:
+        pass
 
 
 if __name__ == "__main__":
     main()
+
+# python3 G101HW1.py 4 0 Italy sample_50.csv
+# python3 G101HW1.py 4 5 United_Kingdom full_dataset.csv
