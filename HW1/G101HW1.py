@@ -11,9 +11,9 @@ def productCustomer(row, country='all'):
     s = row.split(',')
     if int(s[3]) > 0:
         if country == 'all':
-            return (s[1], int(s[6]))
+            return ((s[1], int(s[6])), 0)
         elif s[7] == country:
-            return (s[1], int(s[6]))
+            return ((s[1], int(s[6])), 0)
 
 
 def main():
@@ -56,12 +56,15 @@ def main():
 
     rawData = sc.textFile(dataset_path, K).cache()
     rawData.repartition(K)
-    print(rawData.count())
-
+    print(f'Number of rows = {rawData.count()}')
 
     ############### Task 2 ###############
-    product_customer = rawData.map(
-        lambda row: productCustomer(row, S)).filter(lambda row: row) 
+    product_customer = (rawData.map(lambda row: productCustomer(row, S)).filter(lambda row: row)
+                        .groupByKey()
+                        .map(lambda x: x[0]))
+    print(f'Product-Customer Pairs = {product_customer.count()}')
+
+    ############### Task 3 ###############
 
 
 if __name__ == "__main__":
