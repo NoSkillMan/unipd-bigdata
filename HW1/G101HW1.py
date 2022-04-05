@@ -28,10 +28,6 @@ def main():
     assert len(
         sys.argv) == 5, "Usage: python G101HW1.py <K> <H> <S> <dataset_path>"
 
-    # SPARK SETUP
-    conf = SparkConf().setAppName('G101HW1').setMaster("local[*]")
-    sc = SparkContext(conf=conf)
-
     # INPUT READING
 
     # 1. Read number of partitions
@@ -41,16 +37,20 @@ def main():
 
     # 2. Read Number of Products with Highest Popularity
     H = sys.argv[2]
-    assert H.isdigit, "H Must be an integer"
+    assert H.isdigit(), "H Must be an integer"
     H = int(H)
 
     # 3. Read Name of the Country
     S = sys.argv[3]
-    assert S.isalpha, "S Must be an string"
+    assert S.isalpha(), "S Must be an string"
 
     # 4. Read Path of Dataset
     dataset_path = sys.argv[4]
     assert os.path.isfile(dataset_path), "File not found"
+
+    # SPARK SETUP
+    conf = SparkConf().setAppName('G101HW1').setMaster("local[*]")
+    sc = SparkContext(conf=conf)
 
     ############### Task 1 ###############
 
