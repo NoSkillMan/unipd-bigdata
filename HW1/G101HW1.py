@@ -42,7 +42,7 @@ def main():
 
     # 3. Read Name of the Country
     S = sys.argv[3]
-    assert S.isalpha(), "S Must be an string"
+    assert S.isascii(), "S Must be an string"
 
     # 4. Read Path of Dataset
     dataset_path = sys.argv[4]
@@ -64,7 +64,16 @@ def main():
                         .map(lambda x: x[0]))
     print(f'Product-Customer Pairs = {product_customer.count()}')
 
+
     ############### Task 3 ###############
+    product_popularity1 = (product_customer
+                        .groupByKey()
+                        .mapValues(len))
+    print(product_popularity1.collect())
+    ############## Task 4 ################
+    product_popularity2 = (product_customer
+                            
+    )
 
 
 if __name__ == "__main__":
