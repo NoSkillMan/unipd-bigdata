@@ -116,6 +116,17 @@ def main():
         print(highest_popularity)
 
     ############## Task 6 ################
+    if H == 0:
+        sorted_product_popularity1 = (product_popularity1
+                                      .sortByKey()
+                                      ).collect()
+        print(sorted_product_popularity1)
+
+        sorted_product_popularity2 = (product_popularity2
+                                      .sortByKey()
+                                      ).collect()
+        print(sorted_product_popularity2)
+
 
 if __name__ == "__main__":
     main()
