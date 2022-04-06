@@ -25,6 +25,13 @@ def changeValueToOne(iterator):
         yield (pair[0], 1)
 
 
+def printProductPopularity(iterator):
+    s = str()
+    for i in iterator:
+        s += f'Product: {i[0]} Popularity: {i[1]}; '
+    print(s)
+
+
 def main():
     """ 
         K = <int> Number of Partitions
@@ -89,7 +96,7 @@ def main():
                         .groupByKey()
                         .map(lambda x: x[0])
                         )
-    print(f'Product-Customer Pairs = {product_customer.collect()}')
+    print(f'Product-Customer Pairs = {product_customer.count()}')
 
     ############### Task 3 ###############
 
@@ -111,25 +118,45 @@ def main():
     ############## Task 5 ################
     if H > 0:
         highest_popularity = (product_popularity1
-                              .sortBy(lambda x: x[1], ascending=False)
+                              .sortBy(lambda x: (x[1], x[0]), ascending=False)
                               ).take(H)
-        print(highest_popularity)
+        print(f'Top {H} Products and their Popularities')
+        printProductPopularity(highest_popularity)
 
     ############## Task 6 ################
     if H == 0:
         sorted_product_popularity1 = (product_popularity1
                                       .sortByKey()
                                       ).collect()
-        print(sorted_product_popularity1)
+        print("productPopularity1")
+        printProductPopularity(sorted_product_popularity1)
 
         sorted_product_popularity2 = (product_popularity2
                                       .sortByKey()
                                       ).collect()
-        print(sorted_product_popularity2)
+        print("productPopularity2")
+        printProductPopularity(sorted_product_popularity2)
 
 
 if __name__ == "__main__":
     main()
 
 # python3 G101HW1.py 4 0 Italy sample_50.csv
+# Number of rows = 50
+# Product-Customer Pairs = 11
+# productPopularity1:
+# Product: 21733 Popularity: 2; Product: 22632 Popularity: 1; Product: 22960 Popularity: 4; Product: 22961 Popularity: 2; Product: 22969 Popularity: 1; Product: 84879 Popularity: 1;
+# productPopularity2:
+# Product: 21733 Popularity: 2; Product: 22632 Popularity: 1; Product: 22960 Popularity: 4; Product: 22961 Popularity: 2; Product: 22969 Popularity: 1; Product: 84879 Popularity: 1;
+
+# python3 G101HW1.py 4 5 all sample_10000.csv
+# Number of rows = 10000
+# Product-Customer Pairs = 9104
+# Top 5 Products and their Popularities
+# Product POST Popularity 91; Product 22423 Popularity 91; Product 85123A Popularity 86; Product 47566 Popularity 84; Product 85099B Popularity 70;
+
 # python3 G101HW1.py 4 5 United_Kingdom full_dataset.csv
+# Number of rows = 406829
+# Product-Customer Pairs = 238053
+# Top 5 Products and their Popularities
+# Product 85123A Popularity 821; Product 22423 Popularity 767; Product 47566 Popularity 659; Product 84879 Popularity 642; Product 22086 Popularity 594;
