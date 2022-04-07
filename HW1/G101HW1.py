@@ -1,17 +1,18 @@
 import sys
 import os
-import random as rand
 from pyspark import SparkContext, SparkConf
 
 
-def productCustomer(row, country='all'):
+def productCustomer(row, country='all', arbitary_value=0):
     """
-    row = [0:TransactionID, 1:ProductID, 2:Description, 3:Quantity, 4:InvoiceDate, 5:UnitPrice, 6:CustomerID, 7:Country]
+    row = <str> '<0>TransactionID,<1>ProductID,<2>Description,<3>Quantity,<4>InvoiceDate,<5>UnitPrice,<6>CustomerID,<7>Country'
+    it transform every row to ((<str> productID, <int> customerID),<int> arbitary_value) pair if conditions are met that v can 
+    be any arbitary number because it will be removed at the end of MapReduce
     """
     s = row.split(',')
     if int(s[3]) > 0:
         if country == 'all':
-            return [((s[1], int(s[6])), 0)]
+            return [((s[1], int(s[6])), arbitary_value)]
         elif s[7] == country:
             return [((s[1], int(s[6])), 0)]
         else:
@@ -21,11 +22,17 @@ def productCustomer(row, country='all'):
 
 
 def changeValueToOne(iterator):
+    """
+    channges the value of (<K>,<V>) pair to 1 with generator
+    """
     for pair in iter(iterator):
         yield (pair[0], 1)
 
 
 def printProductPopularity(iterator):
+    """
+    formats list of (productID,popularity) to 'Product: {productID} Popularity: {popularity};' string and prints it
+    """
     s = str()
     for i in iterator:
         s += f'Product: {i[0]} Popularity: {i[1]}; '
@@ -46,23 +53,23 @@ def main():
 
     # INPUT READING
 
-    # 1. Read number of partitions
+    # 1. Read Number of partitions
     K = sys.argv[1]
-    assert K.isdigit(), "K must be an integer"
+    assert K.isdigit(), "<K> Number of partitions Must be an integer"
     K = int(K)
 
     # 2. Read Number of Products with Highest Popularity
     H = sys.argv[2]
-    assert H.isdigit(), "H Must be an integer"
+    assert H.isdigit(), "<H> Number of Products with Highest Popularity  Must be an integer"
     H = int(H)
 
     # 3. Read Name of the Country
     S = sys.argv[3]
-    assert S.isascii(), "S Must be an string"
+    assert S.isascii(), "<S> Name of the Country Must be a string"
 
     # 4. Read Path of Dataset
     dataset_path = sys.argv[4]
-    assert os.path.isfile(dataset_path), "File not found"
+    assert os.path.isfile(dataset_path), "Dataset File not found"
 
     # SPARK SETUP
     conf = SparkConf().setAppName('G101HW1').setMaster("local[*]")
@@ -70,76 +77,77 @@ def main():
 
     ############### Task 1 ###############
 
+    # read dataset and transform it to RDD with minimum K partitions and loads it to Memory
     rawData = sc.textFile(dataset_path, K).cache()
-    rawData.repartition(K)
+    rawData.repartition(K)  # enforces to repartition RDD to K partition
     print(f'Number of rows = {rawData.count()}')
 
-    ############### Old Task 2 ###############
-    # def productCustomer(row, country='all'):
-    #     """
-    #     row = [0:TransactionID, 1:ProductID, 2:Description, 3:Quantity, 4:InvoiceDate, 5:UnitPrice, 6:CustomerID, 7:Country]
-    #     """
-    #     s = row.split(',')
-    #     if int(s[3]) > 0:
-    #         if country == 'all':
-    #             return ((s[1], int(s[6])), 0)
-    #         elif s[7] == country:
-    #             return ((s[1], int(s[6])), 0)
-    #
-    # product_customer = (rawData.map(lambda row: productCustomer(row, S)).filter(lambda row: row)
-    #                     .groupByKey()
-    #                     .map(lambda x: x[0]))
-    # print(f'Product-Customer Pairs = {product_customer.count()}')
-
     ############### Task 2 ###############
-    product_customer = (rawData.flatMap(lambda row: productCustomer(row, S))
-                        .groupByKey()
-                        .map(lambda x: x[0])
+    product_customer = (rawData.flatMap(lambda row: productCustomer(row, S))  # <-- MAP PHASE (R1)
+                        .groupByKey()  # <-- SHUFFLE+GROUPING
+                        .map(lambda x: x[0])  # <-- REDUCE PHASE (R1)
                         )
     print(f'Product-Customer Pairs = {product_customer.count()}')
 
     ############### Task 3 ###############
 
-    # product_popularity1 = (product_customer
-    #                        .groupByKey()
-    #                        .mapValues(len))
-
-    product_popularity1 = (product_customer
-                           .mapPartitions(changeValueToOne)
-                           .groupByKey()
-                           .mapValues(sum)
+    product_popularity1 = (product_customer.mapPartitions(changeValueToOne)  # <-- MAP PHASE (R1)
+                           .groupByKey()  # <-- SHUFFLE+GROUPING
+                           .mapValues(sum)  # <-- REDUCE PHASE (R1)
                            )
 
     ############## Task 4 ################
-    product_popularity2 = (product_customer.map(lambda x: (x[0], 1))
-                           .reduceByKey(lambda x, y: x+y)
+    product_popularity2 = (product_customer.map(lambda x: (x[0], 1))  # <-- MAP PHASE (R1)
+                           .reduceByKey(lambda x, y: x+y) # <-- REDUCE PHASE (R1)
                            )
 
     ############## Task 5 ################
     if H > 0:
         highest_popularity = (product_popularity1
                               .sortBy(lambda x: (x[1], x[0]), ascending=False)
-                              ).take(H)
+                              ).take(H) #make list of top H pairs from RDD
         print(f'Top {H} Products and their Popularities')
         printProductPopularity(highest_popularity)
 
     ############## Task 6 ################
     if H == 0:
         sorted_product_popularity1 = (product_popularity1
-                                      .sortByKey()
-                                      ).collect()
+                                      .sortByKey()  # <-- SHUFFLE
+                                      ).collect()   #transform RDD to list
         print("productPopularity1")
         printProductPopularity(sorted_product_popularity1)
 
         sorted_product_popularity2 = (product_popularity2
-                                      .sortByKey()
-                                      ).collect()
+                                      .sortByKey()  # <-- SHUFFLE
+                                      ).collect()  # transform RDD to list
         print("productPopularity2")
         printProductPopularity(sorted_product_popularity2)
 
 
 if __name__ == "__main__":
     main()
+
+############### Old Task 2 ###############
+# def productCustomer(row, country='all'):
+#     """
+#     row = [0:TransactionID, 1:ProductID, 2:Description, 3:Quantity, 4:InvoiceDate, 5:UnitPrice, 6:CustomerID, 7:Country]
+#     """
+#     s = row.split(',')
+#     if int(s[3]) > 0:
+#         if country == 'all':
+#             return ((s[1], int(s[6])), 0)
+#         elif s[7] == country:
+#             return ((s[1], int(s[6])), 0)
+#
+# product_customer = (rawData.map(lambda row: productCustomer(row, S)).filter(lambda row: row)
+#                     .groupByKey()
+#                     .map(lambda x: x[0]))
+# print(f'Product-Customer Pairs = {product_customer.count()}')
+
+############### Old Task 3 ###############
+# product_popularity1 = (product_customer
+#                        .groupByKey()
+#                        .mapValues(len))
 
 # python3 G101HW1.py 4 0 Italy sample_50.csv
 # Number of rows = 50
