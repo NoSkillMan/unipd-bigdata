@@ -3,10 +3,11 @@ import os
 from pyspark import SparkContext, SparkConf
 
 
-def productCustomer(row, country='all', arbitary_value=0):
+def productCustomer(row:str , country='all', arbitary_value=0) -> list:
     """
     row = <str> '<0>TransactionID,<1>ProductID,<2>Description,<3>Quantity,<4>InvoiceDate,<5>UnitPrice,<6>CustomerID,<7>Country'
-    it transform every row to ((<str> productID, <int> customerID),<int> arbitary_value) pair if conditions are met that v can 
+    
+    transform every row to ((<str> productID, <int> customerID),<int> arbitary_value) pair if conditions are met that v can 
     be any arbitary number because it will be removed at the end of MapReduce
     """
     s = row.split(',')
@@ -14,7 +15,7 @@ def productCustomer(row, country='all', arbitary_value=0):
         if country == 'all':
             return [((s[1], int(s[6])), arbitary_value)]
         elif s[7] == country:
-            return [((s[1], int(s[6])), 0)]
+            return [((s[1], int(s[6])), arbitary_value)]
         else:
             return []
     else:
@@ -77,7 +78,7 @@ def main():
 
     ############### Task 1 ###############
 
-    # read dataset and transform it to RDD with minimum K partitions and loads it to Memory
+    # read dataset and transform it to RDD with minimum K partitions and load it to Memory
     rawData = sc.textFile(dataset_path, K).cache()
     rawData.repartition(K)  # enforces to repartition RDD to K partition
     print(f'Number of rows = {rawData.count()}')
@@ -105,22 +106,22 @@ def main():
     if H > 0:
         highest_popularity = (product_popularity1
                               .sortBy(lambda x: (x[1], x[0]), ascending=False)
-                              ).take(H) #make list of top H pairs from RDD
-        print(f'Top {H} Products and their Popularities')
+                              ).take(H) # make list of top H pairs from RDD
+        print(f'Top {H} Products and their Popularities:')
         printProductPopularity(highest_popularity)
 
     ############## Task 6 ################
     if H == 0:
         sorted_product_popularity1 = (product_popularity1
                                       .sortByKey()  # <-- SHUFFLE
-                                      ).collect()   #transform RDD to list
-        print("productPopularity1")
+                                      ).collect()   # transform RDD to list
+        print("productPopularity1:")
         printProductPopularity(sorted_product_popularity1)
 
         sorted_product_popularity2 = (product_popularity2
                                       .sortByKey()  # <-- SHUFFLE
                                       ).collect()  # transform RDD to list
-        print("productPopularity2")
+        print("productPopularity2:")
         printProductPopularity(sorted_product_popularity2)
 
 
